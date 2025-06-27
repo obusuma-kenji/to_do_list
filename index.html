@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>週間TO DOカレンダーチャットボット</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .calendar-container {
+            background: white;
+            border-radius: 20px;
+            max-width: 1200px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .week-info {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+        }
+        
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .calendar-sidebar {
+            width: 350px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .week-calendar {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .week-header {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+        }
+        
+        .day-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .day-item:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .day-item.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .day-item.completed {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .day-item.active.completed {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .day-header {
+            font-weight: bold;
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        
+        .day-date {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+        
+        .todo-count {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: #667eea;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .day-item.completed .todo-count {
+            background: #28a745;
+        }
+        
+        .todo-preview {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+        
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+        
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+            background: #f8f9fa;
+        }
+        
+        .chat-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .chat-subtitle {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .bot-message {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+        
+        .user-message {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-left: auto;
+            max-width: 70%;
+            text-align: right;
+        }
+        
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .input-container input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            outline: none;
+            transition: border-color 0.3s;
+            font-size: 1rem;
+        }
+        
+        .input-container input:focus {
+            border-color: #667eea;
+        }
+        
+        .send-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .send-button:hover {
+            transform: scale(1.1);
+        }
+        
+        .choices {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .choice-button {
+            background: #e9ecef;
+            border: 2px solid #e9ecef;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+        
+        .choice-button:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .summary-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .summary-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .summary-stat {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .stat-label {
+            color: #666;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .welcome-message {
+            text-align: center;
+            padding: 50px 20px;
+            color: #666;
+        }
+        
+        .welcome-message h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .calendar-sidebar {
+                width: 100%;
+                height: 300px;
+            }
+            
+            .calendar-container {
+                height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar-container">
+        <div class="header">
+            <div class="week-info" id="weekInfo">2024年 第1週</div>
+            <h1>📅 週間TO DOチャットボット</h1>
+            <p>毎日のタスクを対話形式で管理しましょう</p>
+        </div>
+
+    <!-- Google Calendar API読み込み -->
+    <script src="https://apis.google.com/js/api.js" onload="initializeGoogleCalendar()"></script>
+        
+        <div class="main-content">
+            <div class="calendar-sidebar">
+                <div class="week-calendar">
+                    <div class="week-header">今週のTO DO</div>
+                    <div id="daysList"></div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    </div>
+                    
+                    <!-- TO DO編集ボタン -->
+                    <div style="margin-top: 15px; text-align: center;">
+                        <button onclick="openTodoEditor()" style="padding: 10px 20px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border: none; border-radius: 8px; font-size: 0.9rem; cursor: pointer; width: 100%;">
+                            ✏️ TO DOを編集
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="summary-panel">
+                    <div class="summary-title">📊 週間サマリー</div>
+                    <div class="summary-stat">
+                        <span class="stat-label">完了した日:</span>
+                        <span class="stat-value" id="completedDays">0/7</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="stat-label">総タスク数:</span>
+                        <span class="stat-value" id="totalTasks">0</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="stat-label">完了タスク:</span>
+                        <span class="stat-value" id="completedTasks">0</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="stat-label">達成率:</span>
+                        <span class="stat-value" id="achievementRate">0%</span>
+                    </div>
+                    
+                    <!-- データ管理ボタン -->
+                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e9ecef;">
+                        <div style="font-size: 0.9rem; font-weight: bold; margin-bottom: 10px; color: #333;">
+                            💾 データ管理
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <button onclick="exportData()" style="padding: 8px 12px; background: #28a745; color: white; border: none; border-radius: 5px; font-size: 0.8rem; cursor: pointer;">
+                                📥 データをエクスポート
+                            </button>
+                            <label style="padding: 8px 12px; background: #007bff; color: white; border-radius: 5px; font-size: 0.8rem; cursor: pointer; text-align: center;">
+                                📤 データをインポート
+                                <input type="file" accept=".json" onchange="importData(event)" style="display: none;">
+                            </label>
+                            <button onclick="clearData()" style="padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 5px; font-size: 0.8rem; cursor: pointer;">
+                                🗑️ データをクリア
+                            </button>
+                            <button onclick="signInToGoogle()" style="padding: 8px 12px; background: #4285f4; color: white; border: none; border-radius: 5px; font-size: 0.8rem; cursor: pointer;">
+                                🔗 Googleカレンダー連携
+                            </button>
+                        </div>
+                        <div style="font-size: 0.7rem; color: #666; margin-top: 8px; line-height: 1.3;">
+                            ※ データは自動保存されます
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-area">
+                <div class="chat-header">
+                    <div class="chat-title" id="chatTitle">週間TO DOチャットボット</div>
+                    <div class="chat-subtitle" id="chatSubtitle">左のカレンダーから日を選択してください</div>
+                </div>
+                
+                <div class="chat-messages" id="chatMessages">
+                    <div class="welcome-message">
+                        <h2>🎯 TO DO管理を始めましょう！</h2>
+                        <p>左のカレンダーから日を選択すると、その日のタスクについて対話を開始できます。</p>
+                        <p>チャットボットがあなたのTO DOを効率的に管理をサポートします。</p>
+                    </div>
+                </div>
+                
+                <div class="input-container" id="inputContainer" style="display: none;">
+                    <input type="text" id="userInput" placeholder="回答を入力してください..." 
+                           onkeypress="if(event.key==='Enter') handleUserInput()">
+                    <button class="send-button" onclick="handleUserInput()">
+                        ➤
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 週間データの初期化
+        let weekData = {
+            startDate: new Date(),
+            days: [],
+            currentDay: null,
+            chatHistory: {}
+        };
+        
+        // 曜日名
+        const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+        
+        // サンプルTO DOデータ
+        const sampleTodos = {
+            0: ['朝のストレッチ', '家族との時間', '読書30分'],
+            1: ['メール確認', 'プロジェクト資料作成', 'チームミーティング', '日報作成'],
+            2: ['企画書レビュー', 'クライアント電話', 'データ分析', '週次報告書作成'],
+            3: ['プレゼン準備', '新人研修', 'システム更新確認'],
+            4: ['月次レポート作成', '来週の計画立案', 'チーム懇親会'],
+            5: ['掃除', '買い物', '映画鑑賞', '友人との夕食'],
+            6: ['散歩', '料理', '次週の準備', '家族との時間']
+        };
+        
+        // チャットボットの質問パターン
+        const chatPatterns = {
+            welcome: {
+                message: "こんにちは！{date}のTO DOについてお聞きします。今日は{taskCount}個のタスクがありますね。",
+                action: "showTasks"
+            },
+            showTasks: {
+                message: "今日のタスクは以下の通りです：\n{tasks}\n\nどのタスクから始めますか？",
+                action: "selectTask"
+            },
+            taskStatus: {
+                message: "「{task}」の進捗はいかがですか？",
+                choices: ["完了", "進行中", "未着手", "課題あり"]
+            },
+            taskDetails: {
+                message: "詳細を教えてください。どのような状況ですか？",
+                action: "input"
+            },
+            encouragement: {
+                message: "素晴らしいですね！次のタスクに進みましょう。",
+                action: "nextTask"
+            },
+            support: {
+                message: "課題があるようですね。どのようなサポートが必要ですか？",
+                choices: ["時間の調整", "リソースの確保", "優先順位の見直し", "その他"]
+            },
+            completion: {
+                message: "今日のタスクお疲れさまでした！{completed}/{total}個完了です。明日も頑張りましょう！",
+                action: "complete"
+            }
+        };
+        
+        // 初期化
+        function initializeWeek() {
+            const today = new Date();
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - today.getDay() + 1);
+            
+            weekData.startDate = monday;
+            weekData.days = [];
+            
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(monday);
+                date.setDate(monday.getDate() + i);
+                
+                weekData.days.push({
+                    date: date,
+                    dayName: dayNames[date.getDay()],
+                    todos: sampleTodos[i] || [],
+                    completed: [],
+                    inProgress: [],
+                    notes: {},
+                    isCompleted: false
+                });
+            }
+            
+            updateWeekInfo();
+            renderCalendar();
+            updateSummary();
+        }
+        
+        // 週情報更新
+        function updateWeekInfo() {
+            const weekInfo = document.getElementById('weekInfo');
+            const year = weekData.startDate.getFullYear();
+            const month = weekData.startDate.getMonth() + 1;
+            const startDay = weekData.startDate.getDate();
+            
+            weekInfo.textContent = `${year}年 ${month}月 第${Math.ceil(startDay / 7)}週`;
+        }
+        
+        // カレンダー描画
+        function renderCalendar() {
+            const daysList = document.getElementById('daysList');
+            daysList.innerHTML = '';
+            
+            weekData.days.forEach((day, index) => {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'day-item';
+                dayElement.onclick = () => selectDay(index);
+                
+                if (weekData.currentDay === index) {
+                    dayElement.classList.add('active');
+                }
+                
+                if (day.isCompleted) {
+                    dayElement.classList.add('completed');
+                }
+                
+                const completedCount = day.completed.length;
+                const totalCount = day.todos.length;
+                
+                dayElement.innerHTML = `
+                    <div class="day-header">${day.dayName}曜日</div>
+                    <div class="day-date">${day.date.getMonth() + 1}/${day.date.getDate()}</div>
+                    <div class="todo-count">${totalCount}</div>
+                    <div class="todo-preview">
+                        ${totalCount > 0 ? `${completedCount}/${totalCount} 完了` : 'タスクなし'}
+                    </div>
+                `;
+                
+                daysList.appendChild(dayElement);
+            });
+        }
+        
+        // 日選択
+        function selectDay(dayIndex) {
+            weekData.currentDay = dayIndex;
+            const selectedDay = weekData.days[dayIndex];
+            
+            // チャット画面更新
+            updateChatHeader(selectedDay);
+            startDayChat(selectedDay, dayIndex);
+            
+            // カレンダー更新
+            renderCalendar();
+            
+            // 入力エリア表示
+            document.getElementById('inputContainer').style.display = 'flex';
+        }
+        
+        // チャットヘッダー更新
+        function updateChatHeader(day) {
+            const chatTitle = document.getElementById('chatTitle');
+            const chatSubtitle = document.getElementById('chatSubtitle');
+            
+            chatTitle.textContent = `${day.dayName}曜日のTO DO`;
+            chatSubtitle.textContent = `${day.date.getMonth() + 1}月${day.date.getDate()}日 - ${day.todos.length}個のタスク`;
+        }
+        
+        // 日のチャット開始
+        function startDayChat(day, dayIndex) {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = '';
+            
+            // 初期化または履歴の復元
+            if (!weekData.chatHistory[dayIndex]) {
+                weekData.chatHistory[dayIndex] = {
+                    messages: [],
+                    currentTask: 0,
+                    chatState: 'welcome'
+                };
+            }
+            
+            const chatHistory = weekData.chatHistory[dayIndex];
+            
+            // 履歴がある場合は復元
+            if (chatHistory.messages.length > 0) {
+                chatHistory.messages.forEach(message => {
+                    addMessage(message.text, message.isUser);
+                });
+            } else {
+                // 新しいチャット開始
+                const welcomeMessage = chatPatterns.welcome.message
+                    .replace('{date}', `${day.dayName}曜日`)
+                    .replace('{taskCount}', day.todos.length);
+                
+                addMessage(welcomeMessage, false);
+                
+                if (day.todos.length > 0) {
+                    setTimeout(() => {
+                        showTasks(day);
+                    }, 1000);
+                }
+            }
+        }
+        
+        // タスク表示
+        function showTasks(day) {
+            const tasksText = day.todos.map((task, index) => `${index + 1}. ${task}`).join('\n');
+            const message = chatPatterns.showTasks.message
+                .replace('{tasks}', tasksText);
+            
+            addMessage(message, false);
+            
+            // タスク選択肢を追加
+            const choices = day.todos.map((task, index) => ({
+                text: `${index + 1}. ${task}`,
+                action: () => selectTask(index)
+            }));
+            
+            addChoices(choices);
+        }
+        
+        // タスク選択
+        function selectTask(taskIndex) {
+            const day = weekData.days[weekData.currentDay];
+            const task = day.todos[taskIndex];
+            const chatHistory = weekData.chatHistory[weekData.currentDay];
+            
+            chatHistory.currentTask = taskIndex;
+            
+            addMessage(`「${task}」を選択しました`, true);
+            
+            setTimeout(() => {
+                const message = chatPatterns.taskStatus.message.replace('{task}', task);
+                addMessage(message, false);
+                
+                const choices = chatPatterns.taskStatus.choices.map(choice => ({
+                    text: choice,
+                    action: () => handleTaskStatus(choice, taskIndex)
+                }));
+                
+                addChoices(choices);
+            }, 500);
+        }
+        
+        // タスクステータス処理
+        function handleTaskStatus(status, taskIndex) {
+            const day = weekData.days[weekData.currentDay];
+            const task = day.todos[taskIndex];
+            
+            addMessage(`ステータス: ${status}`, true);
+            
+            // ステータスに応じて処理
+            switch(status) {
+                case '完了':
+                    if (!day.completed.includes(taskIndex)) {
+                        day.completed.push(taskIndex);
+                    }
+                    day.inProgress = day.inProgress.filter(i => i !== taskIndex);
+                    addMessage(chatPatterns.encouragement.message, false);
+                    
+                    // カレンダーイベントを更新
+                    updateTaskInCalendar(weekData.currentDay, taskIndex, true);
+                    break;
+                    
+                case '進行中':
+                    if (!day.inProgress.includes(taskIndex)) {
+                        day.inProgress.push(taskIndex);
+                    }
+                    addMessage("進行中のタスクですね。何かサポートが必要でしたらお知らせください。", false);
+                    break;
+                    
+                case '未着手':
+                    addMessage("まだ始めていないタスクですね。いつ頃開始予定ですか？", false);
+                    break;
+                    
+                case '課題あり':
+                    addMessage(chatPatterns.support.message, false);
+                    const supportChoices = chatPatterns.support.choices.map(choice => ({
+                        text: choice,
+                        action: () => handleSupport(choice, taskIndex)
+                    }));
+                    addChoices(supportChoices);
+                    return;
+            }
+            
+            // カレンダー連携の選択肢を追加
+            setTimeout(() => {
+                addCalendarOptions(taskIndex);
+            }, 1000);
+            
+            // 次のアクション
+            setTimeout(() => {
+                checkDayCompletion();
+            }, 2000);
+        }
+        
+        // カレンダー連携オプションを表示
+        function addCalendarOptions(taskIndex) {
+            const choices = [
+                {
+                    text: '📅 Googleカレンダーに追加',
+                    action: () => addTaskToCalendar(weekData.currentDay, taskIndex)
+                },
+                {
+                    text: '📁 .icsファイルをダウンロード',
+                    action: () => generateICSFile(weekData.currentDay, taskIndex)
+                },
+                {
+                    text: '⏭️ 次のタスクへ',
+                    action: () => checkDayCompletion()
+                }
+            ];
+            
+            addMessage("このタスクをカレンダーに追加しますか？", false);
+            addChoices(choices);
+        }
+        
+        // サポート処理
+        function handleSupport(supportType, taskIndex) {
+            addMessage(`サポート内容: ${supportType}`, true);
+            addMessage("承知しました。その課題について一緒に考えてみましょう。詳細を教えてください。", false);
+        }
+        
+        // 日の完了チェック
+        function checkDayCompletion() {
+            const day = weekData.days[weekData.currentDay];
+            const completedCount = day.completed.length;
+            const totalCount = day.todos.length;
+            
+            if (completedCount === totalCount && totalCount > 0) {
+                day.isCompleted = true;
+                const message = chatPatterns.completion.message
+                    .replace('{completed}', completedCount)
+                    .replace('{total}', totalCount);
+                addMessage(message, false);
+            } else {
+                // 他のタスクを確認
+                addMessage("他のタスクも確認してみましょう。", false);
+                setTimeout(() => {
+                    showRemainingTasks(day);
+                }, 1000);
+            }
+            
+            updateSummary();
+            renderCalendar();
+        }
+        
+        // 残りタスク表示
+        function showRemainingTasks(day) {
+            const remainingTasks = day.todos.filter((task, index) => 
+                !day.completed.includes(index)
+            );
+            
+            if (remainingTasks.length > 0) {
+                const choices = remainingTasks.map((task, index) => {
+                    const originalIndex = day.todos.indexOf(task);
+                    return {
+                        text: task,
+                        action: () => selectTask(originalIndex)
+                    };
+                });
+                
+                choices.push({
+                    text: "今日はここまで",
+                    action: () => endDayChat()
+                });
+                
+                addChoices(choices);
+            }
+        }
+        
+        // 日のチャット終了
+        function endDayChat() {
+            addMessage("今日はここまでにします", true);
+            addMessage("お疲れさまでした！また明日頑張りましょう。", false);
+        }
+        
+        // メッセージ追加
+        function addMessage(text, isUser = false) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            messageDiv.textContent = text;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // 履歴に保存
+            if (weekData.currentDay !== null) {
+                weekData.chatHistory[weekData.currentDay].messages.push({
+                    text: text,
+                    isUser: isUser,
+                    timestamp: new Date()
+                });
+            }
+        }
+        
+        // 選択肢追加
+        function addChoices(choices) {
+            const chatMessages = document.getElementById('chatMessages');
+            const choicesDiv = document.createElement('div');
+            choicesDiv.className = 'choices';
+            
+            choices.forEach(choice => {
+                const button = document.createElement('button');
+                button.className = 'choice-button';
+                button.textContent = choice.text;
+                button.onclick = () => {
+                    choice.action();
+                    choicesDiv.style.display = 'none';
+                };
+                choicesDiv.appendChild(button);
+            });
+            
+            chatMessages.appendChild(choicesDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // ユーザー入力処理
+        function handleUserInput() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            
+            if (text) {
+                addMessage(text, true);
+                input.value = '';
+                
+                // 簡単な応答
+                setTimeout(() => {
+                    addMessage("ありがとうございます。承知しました。", false);
+                }, 500);
+            }
+        }
+        
+        // サマリー更新
+        function updateSummary() {
+            const completedDaysCount = weekData.days.filter(day => day.isCompleted).length;
+            const totalTasks = weekData.days.reduce((sum, day) => sum + day.todos.length, 0);
+            const completedTasks = weekData.days.reduce((sum, day) => sum + day.completed.length, 0);
+            const achievementRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            
+            document.getElementById('completedDays').textContent = `${completedDaysCount}/7`;
+            document.getElementById('totalTasks').textContent = totalTasks;
+            document.getElementById('completedTasks').textContent = completedTasks;
+            document.getElementById('achievementRate').textContent = `${achievementRate}%`;
+            
+            // プログレスバー更新
+            document.getElementById('progressFill').style.width = `${achievementRate}%`;
+        }
+        
+        // TO DO編集機能
+        function openTodoEditor() {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                overflow-y: auto;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 15px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 15px 15px 0 0;">
+                        <h2 style="margin: 0; font-size: 1.5rem;">✏️ 週間TO DO編集</h2>
+                        <p style="margin: 5px 0 0 0; opacity: 0.9;">各曜日のタスクを自由に編集できます</p>
+                    </div>
+                    
+                    <div style="padding: 20px;">
+                        <div id="todoEditorContent"></div>
+                        
+                        <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                            <button onclick="this.closest('[style*=fixed]').remove()" 
+                                    style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                                キャンセル
+                            </button>
+                            <button onclick="saveTodoChanges()" 
+                                    style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                                保存
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            renderTodoEditor();
+            
+            // 保存処理
+            window.saveTodoChanges = function() {
+                saveTodoEditorChanges();
+                modal.remove();
+                delete window.saveTodoChanges;
+            };
+        }
+        
+        // TO DO編集画面の描画
+        function renderTodoEditor() {
+            const content = document.getElementById('todoEditorContent');
+            content.innerHTML = '';
+            
+            weekData.days.forEach((day, dayIndex) => {
+                const dayEditor = document.createElement('div');
+                dayEditor.style.cssText = `
+                    margin-bottom: 25px;
+                    padding: 20px;
+                    border: 2px solid #e9ecef;
+                    border-radius: 10px;
+                `;
+                
+                dayEditor.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #333; font-size: 1.2rem;">
+                            ${day.dayName}曜日 (${day.date.getMonth() + 1}/${day.date.getDate()})
+                        </h3>
+                        <button onclick="addNewTodo(${dayIndex})" 
+                                style="padding: 5px 12px; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 0.8rem; cursor: pointer;">
+                            ➕ タスク追加
+                        </button>
+                    </div>
+                    
+                    <div id="todoList-${dayIndex}"></div>
+                `;
+                
+                content.appendChild(dayEditor);
+                renderDayTodos(dayIndex);
+            });
+        }
+        
+        // 各日のTO DO一覧を描画
+        function renderDayTodos(dayIndex) {
+            const todoList = document.getElementById(`todoList-${dayIndex}`);
+            const day = weekData.days[dayIndex];
+            
+            todoList.innerHTML = '';
+            
+            if (day.todos.length === 0) {
+                todoList.innerHTML = `
+                    <div style="text-align: center; color: #999; padding: 20px; border: 2px dashed #ddd; border-radius: 8px;">
+                        タスクがありません。「➕ タスク追加」でタスクを追加してください。
+                    </div>
+                `;
+                return;
+            }
+            
+            day.todos.forEach((todo, todoIndex) => {
+                const todoItem = document.createElement('div');
+                todoItem.style.cssText = `
+                    display: flex;
+                    align-items: center;
+                    padding: 12px;
+                    margin-bottom: 10px;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    border: 1px solid #e9ecef;
+                `;
+                
+                const isCompleted = day.completed.includes(todoIndex);
+                const isInProgress = day.inProgress.includes(todoIndex);
+                
+                let statusIcon = '⏰';
+                let statusColor = '#007bff';
+                
+                if (isCompleted) {
+                    statusIcon = '✅';
+                    statusColor = '#28a745';
+                } else if (isInProgress) {
+                    statusIcon = '🔄';
+                    statusColor = '#ffc107';
+                }
+                
+                todoItem.innerHTML = `
+                    <span style="font-size: 1.2rem; margin-right: 10px; color: ${statusColor};">${statusIcon}</span>
+                    <input type="text" value="${todo}" 
+                           onchange="updateTodoText(${dayIndex}, ${todoIndex}, this.value)"
+                           style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 5px; margin-right: 10px;">
+                    <button onclick="deleteTodo(${dayIndex}, ${todoIndex})" 
+                            style="padding: 6px 10px; background: #dc3545; color: white; border: none; border-radius: 5px; font-size: 0.8rem; cursor: pointer;">
+                        🗑️
+                    </button>
+                `;
+                
+                todoList.appendChild(todoItem);
+            });
+        }
+        
+        // 新しいTO DO追加
+        window.addNewTodo = function(dayIndex) {
+            const todoText = prompt('新しいタスクを入力してください:');
+            if (todoText && todoText.trim()) {
+                weekData.days[dayIndex].todos.push(todoText.trim());
+                renderDayTodos(dayIndex);
+            }
+        };
+        
+        // TO DOテキスト更新
+        window.updateTodoText = function(dayIndex, todoIndex, newText) {
+            if (newText.trim()) {
+                weekData.days[dayIndex].todos[todoIndex] = newText.trim();
+            }
+        };
+        
+        // TO DO削除
+        window.deleteTodo = function(dayIndex, todoIndex) {
+            if (confirm('このタスクを削除しますか？')) {
+                const day = weekData.days[dayIndex];
+                
+                // 関連データも削除
+                day.todos.splice(todoIndex, 1);
+                day.completed = day.completed.filter(i => i !== todoIndex).map(i => i > todoIndex ? i - 1 : i);
+                day.inProgress = day.inProgress.filter(i => i !== todoIndex).map(i => i > todoIndex ? i - 1 : i);
+                
+                renderDayTodos(dayIndex);
+            }
+        };
+        
+        // TO DO編集内容を保存
+        function saveTodoEditorChanges() {
+            // チャット履歴をクリア（タスクが変更されたため）
+            weekData.chatHistory = {};
+            
+            // UI更新
+            renderCalendar();
+            updateSummary();
+            
+            // データ保存
+            saveData();
+            
+            // チャット画面をリセット
+            if (weekData.currentDay !== null) {
+                const selectedDay = weekData.days[weekData.currentDay];
+                updateChatHeader(selectedDay);
+                startDayChat(selectedDay, weekData.currentDay);
+            }
+            
+            alert('✅ TO DOを保存しました！');
+        }
+        
+        // 初期データをサンプルから実際のユーザーデータに変更
+        function initializeWeek() {
+            const today = new Date();
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - today.getDay() + 1);
+            
+            weekData.startDate = monday;
+            weekData.days = [];
+            
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(monday);
+                date.setDate(monday.getDate() + i);
+                
+                weekData.days.push({
+                    date: date,
+                    dayName: dayNames[date.getDay()],
+                    todos: [], // 空のタスクリストで開始
+                    completed: [],
+                    inProgress: [],
+                    notes: {},
+                    isCompleted: false
+                });
+            }
+            
+            updateWeekInfo();
+            renderCalendar();
+            updateSummary();
+        }
+        
+        // サンプルデータ読み込み機能
+        function loadSampleData() {
+            if (confirm('サンプルのTO DOデータを読み込みますか？\n（現在のデータは上書きされます）')) {
+                weekData.days.forEach((day, index) => {
+                    day.todos = sampleTodos[index] || [];
+                    day.completed = [];
+                    day.inProgress = [];
+                    day.isCompleted = false;
+                });
+                
+                weekData.chatHistory = {};
+                
+                renderCalendar();
+                updateSummary();
+                saveData();
+                
+                alert('✅ サンプルデータを読み込みました！');
+            }
+        }
+        let gapi_loaded = false;
+        let calendar_api_ready = false;
+        
+        // Google Calendar API初期化
+        function initializeGoogleCalendar() {
+            gapi.load('client:auth2', initializeGapiClient);
+        }
+        
+        async function initializeGapiClient() {
+            try {
+                await gapi.client.init({
+                    apiKey: 'YOUR_API_KEY', // Google Cloud Consoleで取得
+                    clientId: 'YOUR_CLIENT_ID', // Google Cloud Consoleで取得
+                    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
+                    scope: 'https://www.googleapis.com/auth/calendar'
+                });
+                
+                calendar_api_ready = true;
+                console.log('✅ Google Calendar API初期化完了');
+                
+                // ログインボタンを有効化
+                updateCalendarButtons();
+            } catch (error) {
+                console.error('❌ Google Calendar API初期化エラー:', error);
+            }
+        }
+        
+        // Googleアカウントでログイン
+        async function signInToGoogle() {
+            try {
+                const authInstance = gapi.auth2.getAuthInstance();
+                await authInstance.signIn();
+                console.log('✅ Googleログイン成功');
+                updateCalendarButtons();
+                return true;
+            } catch (error) {
+                console.error('❌ Googleログインエラー:', error);
+                return false;
+            }
+        }
+        
+        // カレンダーにタスクを追加
+        async function addTaskToCalendar(dayIndex, taskIndex) {
+            if (!calendar_api_ready) {
+                alert('Google Calendar APIが初期化されていません');
+                return;
+            }
+            
+            const authInstance = gapi.auth2.getAuthInstance();
+            if (!authInstance.isSignedIn.get()) {
+                const success = await signInToGoogle();
+                if (!success) return;
+            }
+            
+            const day = weekData.days[dayIndex];
+            const task = day.todos[taskIndex];
+            
+            // イベントの開始時間（その日の9:00に設定）
+            const startTime = new Date(day.date);
+            startTime.setHours(9, 0, 0, 0);
+            
+            // イベントの終了時間（1時間後）
+            const endTime = new Date(startTime);
+            endTime.setHours(10, 0, 0, 0);
+            
+            const event = {
+                'summary': `📋 TODO: ${task}`,
+                'description': `TO DOチャットボットから追加されたタスク\n\n詳細:\n- 日付: ${day.dayName}曜日\n- タスク: ${task}\n- 追加日時: ${new Date().toLocaleString()}`,
+                'start': {
+                    'dateTime': startTime.toISOString(),
+                    'timeZone': 'Asia/Tokyo'
+                },
+                'end': {
+                    'dateTime': endTime.toISOString(),
+                    'timeZone': 'Asia/Tokyo'
+                },
+                'reminders': {
+                    'useDefault': false,
+                    'overrides': [
+                        {'method': 'popup', 'minutes': 30}
+                    ]
+                }
+            };
+            
+            try {
+                const response = await gapi.client.calendar.events.insert({
+                    'calendarId': 'primary',
+                    'resource': event
+                });
+                
+                console.log('✅ カレンダーイベント作成成功:', response);
+                alert(`✅ "${task}" をGoogleカレンダーに追加しました！`);
+                
+                // タスクにカレンダーイベントIDを保存
+                if (!day.calendarEvents) day.calendarEvents = {};
+                day.calendarEvents[taskIndex] = response.result.id;
+                saveData();
+                
+            } catch (error) {
+                console.error('❌ カレンダーイベント作成エラー:', error);
+                alert('❌ カレンダーへの追加に失敗しました: ' + error.message);
+            }
+        }
+        
+        // 完了したタスクをカレンダーで更新
+        async function updateTaskInCalendar(dayIndex, taskIndex, isCompleted) {
+            const day = weekData.days[dayIndex];
+            const task = day.todos[taskIndex];
+            
+            if (!day.calendarEvents || !day.calendarEvents[taskIndex]) {
+                return; // カレンダーイベントが存在しない
+            }
+            
+            const eventId = day.calendarEvents[taskIndex];
+            
+            try {
+                // イベントを取得
+                const event = await gapi.client.calendar.events.get({
+                    'calendarId': 'primary',
+                    'eventId': eventId
+                });
+                
+                // タイトルを更新（完了マークを付ける）
+                const summary = isCompleted 
+                    ? `✅ TODO完了: ${task}`
+                    : `📋 TODO: ${task}`;
+                
+                // イベントを更新
+                await gapi.client.calendar.events.update({
+                    'calendarId': 'primary',
+                    'eventId': eventId,
+                    'resource': {
+                        ...event.result,
+                        'summary': summary
+                    }
+                });
+                
+                console.log('✅ カレンダーイベント更新成功');
+                
+            } catch (error) {
+                console.error('❌ カレンダーイベント更新エラー:', error);
+            }
+        }
+        
+        // カレンダーボタンの状態を更新
+        function updateCalendarButtons() {
+            const calendarButtons = document.querySelectorAll('.calendar-sync-btn');
+            const isSignedIn = calendar_api_ready && 
+                              gapi.auth2 && 
+                              gapi.auth2.getAuthInstance() && 
+                              gapi.auth2.getAuthInstance().isSignedIn.get();
+            
+            calendarButtons.forEach(btn => {
+                btn.disabled = !isSignedIn;
+                btn.textContent = isSignedIn ? '📅 カレンダーに追加' : '🔒 ログインが必要';
+            });
+        }
+        
+        // .icsファイル生成（Outlook最適化版）
+        function generateICSFile(dayIndex, taskIndex) {
+            const day = weekData.days[dayIndex];
+            const task = day.todos[taskIndex];
+            
+            // タスクの時間設定ダイアログを表示
+            showTimeSettingDialog(day, task, (startTime, duration, reminder) => {
+                createICSFile(day, task, startTime, duration, reminder, dayIndex, taskIndex);
+            });
+        }
+        
+        // 時間設定ダイアログ
+        function showTimeSettingDialog(day, task, callback) {
+            const dialog = document.createElement('div');
+            dialog.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+            
+            dialog.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 15px; max-width: 400px; width: 90%;">
+                    <h3 style="margin-bottom: 20px; color: #333;">📅 カレンダー設定</h3>
+                    <p style="margin-bottom: 15px; color: #666;">タスク: ${task}</p>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">開始時間:</label>
+                        <input type="time" id="taskTime" value="09:00" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">所要時間:</label>
+                        <select id="taskDuration" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                            <option value="30">30分</option>
+                            <option value="60" selected>1時間</option>
+                            <option value="90">1時間30分</option>
+                            <option value="120">2時間</option>
+                            <option value="180">3時間</option>
+                            <option value="240">4時間</option>
+                            <option value="480">終日（8時間）</option>
+                        </select>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">リマインダー:</label>
+                        <select id="taskReminder" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                            <option value="0">なし</option>
+                            <option value="15">15分前</option>
+                            <option value="30" selected>30分前</option>
+                            <option value="60">1時間前</option>
+                            <option value="120">2時間前</option>
+                            <option value="1440">1日前</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="this.closest('[style*=fixed]').remove()" 
+                                style="flex: 1; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            キャンセル
+                        </button>
+                        <button onclick="confirmTimeSettings()" 
+                                style="flex: 1; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            カレンダーに追加
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // 確認ボタンの処理
+            window.confirmTimeSettings = function() {
+                const time = document.getElementById('taskTime').value;
+                const duration = parseInt(document.getElementById('taskDuration').value);
+                const reminder = parseInt(document.getElementById('taskReminder').value);
+                
+                dialog.remove();
+                callback(time, duration, reminder);
+                delete window.confirmTimeSettings;
+            };
+            
+            document.body.appendChild(dialog);
+        }
+        
+        // 実際の.icsファイル作成
+        function createICSFile(day, task, startTime, duration, reminder, dayIndex, taskIndex) {
+            // 開始時間を設定
+            const [hours, minutes] = startTime.split(':');
+            const startDate = new Date(day.date);
+            startDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+            
+            // 終了時間を計算
+            const endDate = new Date(startDate);
+            endDate.setMinutes(endDate.getMinutes() + duration);
+            
+            // ICS形式の日時フォーマット（Outlook対応）
+            function formatICSDate(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hour = String(date.getHours()).padStart(2, '0');
+                const min = String(date.getMinutes()).padStart(2, '0');
+                const sec = String(date.getSeconds()).padStart(2, '0');
+                
+                return `${year}${month}${day}T${hour}${min}${sec}`;
+            }
+            
+            // タスクの進捗状況を取得
+            const dayData = weekData.days[dayIndex];
+            const isCompleted = dayData.completed.includes(taskIndex);
+            const isInProgress = dayData.inProgress.includes(taskIndex);
+            
+            let status = '⏰ TODO';
+            let priority = 'NORMAL';
+            
+            if (isCompleted) {
+                status = '✅ 完了';
+                priority = 'LOW';
+            } else if (isInProgress) {
+                status = '🔄 進行中';
+                priority = 'HIGH';
+            }
+            
+            // カテゴリ設定（Outlookでの色分け）
+            const category = isCompleted ? 'GREEN' : isInProgress ? 'YELLOW' : 'BLUE';
+            
+            let icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//TO DOチャットボット//NONSGML v1.0//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:todo-${dayIndex}-${taskIndex}-${Date.now()}@todoapp.local
+DTSTAMP:${formatICSDate(new Date())}
+DTSTART:${formatICSDate(startDate)}
+DTEND:${formatICSDate(endDate)}
+SUMMARY:${status}: ${task}
+DESCRIPTION:📋 TO DOチャットボットから追加されたタスク\\n\\n📅 日付: ${day.dayName}曜日 (${day.date.getMonth() + 1}/${day.date.getDate()})\\n📝 タスク: ${task}\\n⏰ 所要時間: ${duration}分\\n📊 ステータス: ${status}\\n\\n🤖 TO DOチャットボットで管理中
+LOCATION:
+PRIORITY:${priority}
+STATUS:${isCompleted ? 'COMPLETED' : 'CONFIRMED'}
+SEQUENCE:0
+CATEGORIES:TODO,${category}
+TRANSP:OPAQUE`;
+
+            // リマインダーの追加
+            if (reminder > 0) {
+                icsContent += `
+BEGIN:VALARM
+TRIGGER:-PT${reminder}M
+DESCRIPTION:📋 タスクのリマインダー: ${task}
+ACTION:DISPLAY
+END:VALARM`;
+            }
+
+            icsContent += `
+END:VEVENT
+END:VCALENDAR`;
+            
+            // ファイル名を日本語対応で生成
+            const fileName = `TODO_${day.dayName}_${task.substring(0, 10).replace(/[^\w\s]/gi, '')}_${startTime.replace(':', '')}.ics`;
+            
+            // ファイルダウンロード
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // 成功メッセージ
+            setTimeout(() => {
+                addMessage(`✅ "${task}" のカレンダーファイルをダウンロードしました！`, false);
+                addMessage(`📁 ファイル名: ${fileName}`, false);
+                addMessage(`💡 ダウンロードしたファイルをダブルクリックしてOutlookで開いてください。`, false);
+            }, 500);
+        }
+        const STORAGE_KEY = 'weekly_todo_data';
+        
+        // データを保存
+        function saveData() {
+            try {
+                const dataToSave = {
+                    weekData: weekData,
+                    lastSaved: new Date().toISOString()
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+                console.log('✅ データを保存しました');
+                return true;
+            } catch (error) {
+                console.error('❌ 保存エラー:', error);
+                return false;
+            }
+        }
+        
+        // データを読み込み
+        function loadData() {
+            try {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                if (savedData) {
+                    const parsed = JSON.parse(savedData);
+                    
+                    // 日付オブジェクトを復元
+                    if (parsed.weekData && parsed.weekData.days) {
+                        parsed.weekData.days.forEach(day => {
+                            day.date = new Date(day.date);
+                        });
+                        parsed.weekData.startDate = new Date(parsed.weekData.startDate);
+                    }
+                    
+                    weekData = {...weekData, ...parsed.weekData};
+                    console.log('✅ データを読み込みました');
+                    return true;
+                }
+            } catch (error) {
+                console.error('❌ 読み込みエラー:', error);
+            }
+            return false;
+        }
+        
+        // データをクリア
+        function clearData() {
+            if (confirm('保存されたデータをすべて削除しますか？')) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            }
+        }
+        
+        // JSONファイルとしてエクスポート
+        function exportData() {
+            const dataToExport = {
+                weekData: weekData,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const blob = new Blob([JSON.stringify(dataToExport, null, 2)], {
+                type: 'application/json'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `todo_data_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // JSONファイルからインポート
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    
+                    if (imported.weekData) {
+                        // 日付オブジェクトを復元
+                        imported.weekData.days.forEach(day => {
+                            day.date = new Date(day.date);
+                        });
+                        imported.weekData.startDate = new Date(imported.weekData.startDate);
+                        
+                        weekData = imported.weekData;
+                        saveData();
+                        
+                        // UI更新
+                        updateWeekInfo();
+                        renderCalendar();
+                        updateSummary();
+                        
+                        alert('✅ データをインポートしました！');
+                    }
+                } catch (error) {
+                    alert('❌ ファイルの読み込みに失敗しました: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        // 自動保存を有効化（データ変更時に自動実行）
+        function enableAutoSave() {
+            // データが変更されるたびに自動保存
+            const originalSelectDay = selectDay;
+            selectDay = function(dayIndex) {
+                originalSelectDay(dayIndex);
+                saveData();
+            };
+            
+            const originalHandleTaskStatus = handleTaskStatus;
+            handleTaskStatus = function(status, taskIndex) {
+                originalHandleTaskStatus(status, taskIndex);
+                saveData();
+            };
+        }
+        
+        // 初期化実行
+        document.addEventListener('DOMContentLoaded', function() {
+            // まず保存されたデータを読み込み
+            const hasData = loadData();
+            
+            // データがない場合は新規作成
+            if (!hasData) {
+                initializeWeek();
+            } else {
+                // 既存データがある場合はUI更新
+                updateWeekInfo();
+                renderCalendar();
+                updateSummary();
+            }
+            
+            // 自動保存を有効化
+            enableAutoSave();
+        });
+    </script>
+</body>
+</html>
